@@ -1,17 +1,49 @@
 # meta
 
-**Self-developing metacognition for AI:** research into how systems might monitor, compare, adapt and improve their own cognitive methods rather than merely describe their thinking.
+**Self-developing metacognition for AI:** research into how a system might monitor, evaluate, adapt, and improve its own cognitive methods rather than merely describe its thinking.
 
-**Status:** executable **toy method-selection baseline**, **not** self-created reasoning methods, a model with introspective access, deployed autonomous learning, or demonstrated general intelligence.
+**Status:** standalone executable toy method-selection baseline. It does not demonstrate autonomous discovery of methods, privileged access to internal model reasoning, deployed continuous learning, or general intelligence.
 
-The standard-library-only `meta.core` contains three deliberately fixed binary algorithms, source-digest identity checks, a feedback-based method selector, and held-out comparison against fixed, random and reflection-only controls. A separate `domain_shift_probe` compares a selected method against a frozen baseline on two differently labeled domains and reports negative transfer rather than averaging it away. Source hash checks reduce accidental misidentification but **do not prove** that a remote worker executed the method claimed by a receipt; our local `execute` function explicitly calls a frozen mapping.
+## Purpose
 
-Run `python -m unittest discover -s tests -v` (Python 3.11+). The suite currently contains **9 bounded tests**. In this example, the selector can improve over a fixed baseline on a constructed parity task **because the correct method was developer-authored and already in its candidate set**. This is not discovery of a novel strategy, nor independent evaluation custody.
+Investigate whether feedback can produce *measurable improvements in how a system chooses and applies cognitive strategies*, and whether those improvements persist on later unfamiliar cases. Mere self-description, repeated examples, and method labels are not evidence of cognitive development.
 
-See [research/PROTOCOL.md](research/PROTOCOL.md) for real qualification criteria: separate evaluator process, later held-outs, negative transfer, cold retention, budgets and precommitment. Complementary [humility](https://github.com/thebrazenbeard/humility) studies calibration and evidence-sensitive revision.
+## What is implemented
 
-Intellectual starting points: Nelson & Narens (1990), *Metamemory: A Theoretical Framework and New Findings*, DOI [10.1016/S0079-7421(08)60053-5](https://doi.org/10.1016/S0079-7421(08)60053-5). Existing Vera Mono PR [#74](https://github.com/thebrazenbeard/vera-mono/pull/74) proposes endogenous inquiry research; that document is not a live learning runtime.
+The standard-library-only `meta.core` contains:
+
+- Three explicitly developer-written binary algorithms.
+- Local source-digest checks for frozen method identities.
+- Selection among those existing methods using labeled examples.
+- Held-out accuracy comparisons against fixed, randomized, and reflection-only controls.
+- A `domain_shift_probe` that reports negative transfer rather than hiding it in pooled accuracy.
+
+The toy `execute` function actually calls a selected local method; its source hash **does not** prove that an independent worker executed identical code. All example labels remain caller-supplied. This is not a hidden-evaluator experiment.
+
+## Run the tests
+
+Requires Python 3.11+; no third-party dependencies.
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+The suite has 9 bounded unit tests. Passing them demonstrates mechanics only.
 
 ## A deliberate negative result
 
-On a toy parity task, choosing the correct prewritten `parity` method yields 100% accuracy on same-rule held-out examples. Reversing the rule for a separate shifted domain drops that selected method to **0%**, while a frozen `zero` baseline still achieves 50% there. The provided `domain_shift_probe` exposes that reversal explicitly; it does **not** demonstrate automatic detection or repair of the shift. Success on one distribution must never be silently generalized.
+On a constructed parity task, choosing the correct prewritten `parity` method produces **100% accuracy** on same-rule examples. When the labeling rule reverses on shifted examples, the chosen method falls to **0%**, while a frozen `zero` baseline yields **50%** in that shifted set.
+
+The current `domain_shift_probe` reports that failure; it does **not** autonomously detect the shift, invent a new method, or recover from it. A method that succeeds once need not generalize.
+
+## Research direction
+
+Precommit method identity, candidate choices, outcome evaluation, budgets, negative controls, and holdout rules. For independent qualification, keep labels outside the candidate's process, verify actual method invocation, test cold retention, and compare later unseen performance against fair baselines. Rewarding novelty or claims of introspection is not equivalent to rewarding improved competence.
+
+See the local [experimental protocol](research/PROTOCOL.md) and [evidence boundaries](research/BOUNDARIES.md).
+
+## Research reference
+
+Nelson & Narens (1990), *Metamemory: A Theoretical Framework and New Findings*, [DOI: 10.1016/S0079-7421(08)60053-5](https://doi.org/10.1016/S0079-7421(08)60053-5).
+
+This repository is an independent research implementation. Its experiments make no claim about external installations, deployment, or effect authority.
