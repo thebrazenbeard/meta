@@ -42,6 +42,14 @@ Precommit method identity, candidate choices, outcome evaluation, budgets, negat
 
 See the local [experimental protocol](research/PROTOCOL.md) and [evidence boundaries](research/BOUNDARIES.md).
 
+## Intended use and interoperability
+
+**Independent by design; reusable by choice.** This repository investigates metacognitive method selection and development as general AI research, not as a component exclusively for any particular assistant, organization, model, or operating system.
+
+Potential consumers include model evaluation labs, adaptive research agents, tool-using assistants, experimental orchestration systems, and Vera projects. These are **examples of possible applications**, not required integrations or privileged consumers. No external project is required to run this code.
+
+Any integration must independently verify method execution, evidence custody, reproducibility, and the effects of changing methods. Adopting these primitives does not prove self-developing cognition or confer production authority.
+
 ## Research reference
 
 Nelson & Narens (1990), *Metamemory: A Theoretical Framework and New Findings*, [DOI: 10.1016/S0079-7421(08)60053-5](https://doi.org/10.1016/S0079-7421(08)60053-5).
