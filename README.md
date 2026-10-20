@@ -58,6 +58,10 @@ Any integration must independently verify method execution, evidence custody, re
 
 The additive [method challenge protocol](research/COMMITMENT_PROTOCOL.md) freezes a prewritten method identity together with sorted task inputs, executes the selected **local** callable without labels, and later compares results to labels supplied by an evaluator. It rejects altered inputs, changed claimed methods, and inconsistent outputs. It **does not** independently witness execution or protect hidden labels; an external evaluator still must establish those properties.
 
+## Separate-process prequential experiment
+
+The [test-then-update process protocol](research/PREQUENTIAL_PROCESS_PROTOCOL.md) evaluates each proposed method/output before the label is transmitted to the worker, then measures future method choices and phase-specific errors against frozen baselines. This is a real process boundary, **not independently secure label custody or new-method invention**.
+
 ## Research reference
 
 Nelson & Narens (1990), *Metamemory: A Theoretical Framework and New Findings*, [DOI: 10.1016/S0079-7421(08)60053-5](https://doi.org/10.1016/S0079-7421(08)60053-5).
