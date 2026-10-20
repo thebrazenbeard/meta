@@ -36,6 +36,10 @@ On a constructed parity task, choosing the correct prewritten `parity` method pr
 
 The current `domain_shift_probe` reports that failure; it does **not** autonomously detect the shift, invent a new method, or recover from it. A method that succeeds once need not generalize.
 
+## Adaptive feedback (experimental)
+
+`meta.adaptation.FeedbackController` implements a simple **monitor → control** loop: choose an existing method, get external feedback, then update future method choice using bounded recent losses. A synthetic shift test verifies actual method switching and recovery relative to a frozen algorithm. This is genuine *prewritten-method selection adaptation*, not self-invented strategies or a learned learning rule. The study also closes a specific training/held-out case-overlap loophole. See the local [adaptive method-control protocol](research/ADAPTIVE_FEEDBACK.md).
+
 ## Research direction
 
 Precommit method identity, candidate choices, outcome evaluation, budgets, negative controls, and holdout rules. For independent qualification, keep labels outside the candidate's process, verify actual method invocation, test cold retention, and compare later unseen performance against fair baselines. Rewarding novelty or claims of introspection is not equivalent to rewarding improved competence.

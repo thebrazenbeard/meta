@@ -19,7 +19,7 @@ class MetaTests(unittest.TestCase):
         self.assertLess(evaluate(freeze('zero'), heldout), evaluate(freeze('parity'), heldout))
     def test_reflection_only_does_not_change_method(self):
         cases = [(i,i%2) for i in range(12)]
-        r = toy_arms(cases, cases)
+        r = toy_arms(cases, [(i, i%2) for i in range(30,42)])
         self.assertEqual(r['arms']['reflection_only']['method'], 'zero')
         self.assertFalse(r['candidate_method_discovered'])
     def test_duplicate_train_case_rejected(self):

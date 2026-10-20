@@ -52,6 +52,9 @@ def evaluate(frozen, cases):
 
 def toy_arms(training, heldout, *, seed=7):
     """Informative comparison only; caller-supplied labels are NOT hidden/custodial."""
+    training, heldout = tuple(training), tuple(heldout)
+    if {x for x, _ in training} & {x for x, _ in heldout}:
+        raise ValueError("held-out inputs overlap training inputs")
     selected = choose(training)
     fixed = freeze('zero')
     random_name = random.Random(seed).choice(sorted(METHODS))
@@ -71,8 +74,12 @@ def domain_shift_probe(training, near_cases, shifted_cases, *, seed=7):
     This is a same-process synthetic toy. It does not attest independent
     labels, future behavior, or self-generated cognitive strategies.
     """
+    training, near_cases, shifted_cases = tuple(training), tuple(near_cases), tuple(shifted_cases)
     if not near_cases or not shifted_cases:
         raise ValueError("both held-out domains required")
+    trained_inputs = {x for x, _ in training}
+    if trained_inputs & {x for x, _ in near_cases + shifted_cases}:
+        raise ValueError("shift probe inputs overlap training inputs")
     chosen = choose(training)
     frozen_baseline = freeze('zero')
     near_chosen = evaluate(chosen, near_cases)
