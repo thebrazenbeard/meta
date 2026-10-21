@@ -48,7 +48,7 @@ def _send(proc, request):
     return response
 
 
-def evaluate_stream(cases):
+def evaluate_stream(cases, *, feedback_overrides=None):
     """Evaluator keeps (id, input, label, phase) outside worker stdin until feedback."""
     rows = tuple(cases)
     if not rows:
@@ -65,6 +65,17 @@ def evaluate_stream(cases):
             raise ValueError("binary integer label required")
         if type(phase) is not str or not phase:
             raise ValueError("nonempty phase required")
+    # Local scoring truth stays frozen; overrides simulate UNTRUSTED learning feedback.
+    # Validate the entire override map before launching any worker process.
+    if feedback_overrides is None:
+        feedback_overrides = {}
+    if type(feedback_overrides) is not dict:
+        raise ValueError("feedback_overrides must be an exact ID-to-binary-label dict")
+    for case_id, feedback in feedback_overrides.items():
+        if type(case_id) is not str or case_id not in case_ids:
+            raise ValueError("feedback override references an unknown case ID")
+        if type(feedback) is not int or feedback not in (0, 1):
+            raise ValueError("feedback override requires an exact binary int")
     root = str(Path(__file__).resolve().parents[1])
     command = ("import sys;sys.path.insert(0," + repr(root) +
                ");from meta.prequential import _worker;_worker()")
@@ -72,6 +83,7 @@ def evaluate_stream(cases):
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, text=True, bufsize=1)
     by_phase = {}
+    feedback_divergent_count = 0
     try:
         for case_id, x, label, phase in rows:
             prediction = _send(proc, {"op": "predict", "case_id": case_id, "input": x})
@@ -90,10 +102,16 @@ def evaluate_stream(cases):
             stat["frozen_parity_errors"] += int(METHODS["parity"](x) != label)
             stat["fixed_zero_errors"] += int(METHODS["zero"](x) != label)
             stat["methods"][method] = stat["methods"].get(method, 0) + 1
-            ack = _send(proc, {"op": "feedback", "case_id": case_id, "outcome": label})
+            feedback = feedback_overrides.get(case_id, label)
+            feedback_divergent_count += int(feedback != label)
+            ack = _send(proc, {"op": "feedback", "case_id": case_id, "outcome": feedback})
             if ack != {"case_id": case_id, "observed": True}:
                 raise ValueError("unexpected feedback acknowledgment")
         return {"phases": by_phase, "worker_pid": proc.pid,
+                "feedback_override_count": len(feedback_overrides),
+                "feedback_divergent_count": feedback_divergent_count,
+                "score_truth_origin": "EVALUATOR_LOCAL_UNAUTHENTICATED",
+                "feedback_origin": "SIMULATED_UNTRUSTED",
                 "separate_process_observed": proc.pid != os.getpid(),
                 "prediction_before_label_protocol": True,
                 "independent_label_custody_verified": False,
