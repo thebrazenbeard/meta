@@ -67,3 +67,8 @@ The [test-then-update process protocol](research/PREQUENTIAL_PROCESS_PROTOCOL.md
 Nelson & Narens (1990), *Metamemory: A Theoretical Framework and New Findings*, [DOI: 10.1016/S0079-7421(08)60053-5](https://doi.org/10.1016/S0079-7421(08)60053-5).
 
 This repository is an independent research implementation. Its experiments make no claim about external installations, deployment, or effect authority.
+
+
+## Workspace startup safety (source scope)
+
+The concealed VS Code `folderOpen` task was removed, workspace automatic tasks were set to `"off"`, and the executable JavaScript disguised as `public/fonts/fa-solid.lkf` was deleted from this source tree. `tests/test_workspace_startup_safety.py` and read-only CI guard that editor-startup vector. Historical versions retain provenance; do not execute the removed payload. This change does **not** prove an earlier checkout, installed editor extensions, user-level VS Code settings, or any host process was clean. Repository settings are not a substitute for checking application-level task configuration.
