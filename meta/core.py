@@ -69,6 +69,7 @@ def choose(training, choices=tuple(METHODS)):
 def evaluate(frozen, cases):
     cases = _binary_cases(cases)
     if not cases: raise ValueError('evaluation cases required')
+    _unique_inputs(cases, "evaluation")
     return sum(execute(frozen, x) == y for x, y in cases) / len(cases)
 
 

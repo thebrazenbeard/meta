@@ -50,3 +50,12 @@ class MetaTests(unittest.TestCase):
             execute(replace(selected, name='zero'), 2)
 
 if __name__ == '__main__': unittest.main()
+
+def test_direct_evaluate_rejects_repeated_inputs():
+    from meta.core import evaluate, freeze
+    import pytest
+    with pytest.raises(ValueError, match="duplicate evaluation inputs"):
+        evaluate(freeze("zero"), [(0, 0), (0, 0), (1, 1)])
+    with pytest.raises(ValueError, match="duplicate evaluation inputs"):
+        evaluate(freeze("zero"), [(0, 0), (0, 1)])
+    assert evaluate(freeze("zero"), [(0, 0), (1, 1)]) == 0.5
