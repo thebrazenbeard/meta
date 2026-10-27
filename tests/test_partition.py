@@ -31,6 +31,17 @@ class DataPartitionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "overlap"):
             toy_arms(training, training)
 
+    def test_toy_arms_rejects_replayed_heldout_inputs(self):
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            toy_arms([(1, 1)], [(20, 0), (20, 0)])
+
+    def test_shift_probe_rejects_replayed_cases_within_domains(self):
+        train = [(1, 1)]
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            domain_shift_probe(train, [(20, 0), (20, 0)], [(30, 0), (31, 1)])
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            domain_shift_probe(train, [(20, 0), (21, 1)], [(30, 0), (30, 0)])
+
     def test_domain_shift_probe_rejects_train_overlap(self):
         train = [(i, i % 2) for i in range(10)]
         near = [(9, 1), (11, 1)]

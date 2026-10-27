@@ -7,7 +7,7 @@ The tests show that a fixed parity method can perform well before a rule reversa
 ## Experimental discipline
 - Freeze candidate algorithms and feedback policy, announce distribution-shift generation and score against a frozen method and randomized choice.
 - Generate feedback only **after** a method choice and its prediction. Reject replay and mismatched case IDs.
-- Distinguish training inputs from purported held-out inputs; `toy_arms` and `domain_shift_probe` reject overlap.
+- Distinguish training inputs from purported held-out inputs; `toy_arms` and `domain_shift_probe` reject overlap **and duplicate inputs within each held-out partition**, so deterministic toy examples cannot be replayed to inflate apparent sample size. This is local input validation, not independent source custody.
 - Score errors before and after the shift separately and compare adaptation latency. Disclose that full-information evaluation of every prewritten method is available after each revealed outcome.
 - Independently held labels and a witnessed candidate execution process are necessary for credible qualification. This package does not provide those.
 - Investigate whether adaptive selection generalizes to methods with costs, partial feedback, noisy labels and genuinely unseen task families; also include a control with unchanged policy and merely narrated reflection.

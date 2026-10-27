@@ -25,6 +25,12 @@ def _binary_cases(cases):
     return rows
 
 
+def _unique_inputs(cases, partition):
+    """A deterministic toy input cannot count as multiple independent trials."""
+    if len({x for x, _ in cases}) != len(cases):
+        raise ValueError(f"duplicate {partition} inputs")
+
+
 def method_identity(name):
     if name not in METHODS: raise ValueError('unknown executable method')
     return sha256(inspect.getsource(METHODS[name]).encode()).hexdigest()
@@ -69,6 +75,7 @@ def evaluate(frozen, cases):
 def toy_arms(training, heldout, *, seed=7):
     """Informative comparison only; caller-supplied labels are NOT hidden/custodial."""
     training, heldout = _binary_cases(training), _binary_cases(heldout)
+    _unique_inputs(heldout, "held-out")
     if {x for x, _ in training} & {x for x, _ in heldout}:
         raise ValueError("held-out inputs overlap training inputs")
     selected = choose(training)
@@ -94,6 +101,8 @@ def domain_shift_probe(training, near_cases, shifted_cases, *, seed=7):
         _binary_cases(training), _binary_cases(near_cases), _binary_cases(shifted_cases))
     if not near_cases or not shifted_cases:
         raise ValueError("both held-out domains required")
+    _unique_inputs(near_cases, "near held-out")
+    _unique_inputs(shifted_cases, "shifted held-out")
     trained_inputs = {x for x, _ in training}
     if trained_inputs & {x for x, _ in near_cases + shifted_cases}:
         raise ValueError("shift probe inputs overlap training inputs")
