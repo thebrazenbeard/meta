@@ -1,8 +1,31 @@
 import unittest
-from meta.core import toy_arms, domain_shift_probe
+from meta.core import choose, evaluate, freeze, toy_arms, domain_shift_probe
 
 
 class DataPartitionTests(unittest.TestCase):
+    def test_core_rejects_nonbinary_labels_and_bool_inputs(self):
+        with self.assertRaises(ValueError):
+            choose([(2, True)])
+        with self.assertRaises(ValueError):
+            choose([(True, 1)])
+        with self.assertRaises(ValueError):
+            evaluate(freeze('zero'), [(2, 2)])
+        with self.assertRaises(ValueError):
+            toy_arms([(2, 0)], [(3, False)])
+
+    def test_core_rejects_invalid_method_choices(self):
+        with self.assertRaises(ValueError):
+            choose([(2, 0)], choices=())
+        with self.assertRaises(ValueError):
+            choose([(2, 0)], choices=('unknown',))
+
+    def test_shift_probe_rejects_overlapping_holdout_domains(self):
+        train = [(i, i % 2) for i in range(6)]
+        near = [(20, 0), (21, 1)]
+        shifted = [(21, 0), (22, 1)]
+        with self.assertRaisesRegex(ValueError, 'overlap'):
+            domain_shift_probe(train, near, shifted)
+
     def test_toy_arms_rejects_reused_training_inputs(self):
         training = [(i, i % 2) for i in range(10)]
         with self.assertRaisesRegex(ValueError, "overlap"):

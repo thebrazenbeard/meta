@@ -14,6 +14,17 @@ def invert_parity(x): return 1 - x % 2
 METHODS = {'zero': zero, 'parity': parity, 'invert_parity': invert_parity}
 
 
+def _binary_cases(cases):
+    """Validate the toy task's integer inputs and binary evaluator labels."""
+    rows = tuple(cases)
+    for row in rows:
+        if (not isinstance(row, (tuple, list)) or len(row) != 2
+                or type(row[0]) is not int
+                or type(row[1]) is not int or row[1] not in (0, 1)):
+            raise ValueError('cases require integer inputs and binary integer labels')
+    return rows
+
+
 def method_identity(name):
     if name not in METHODS: raise ValueError('unknown executable method')
     return sha256(inspect.getsource(METHODS[name]).encode()).hexdigest()
@@ -38,7 +49,11 @@ def execute(frozen, x):
 
 def choose(training, choices=tuple(METHODS)):
     """Select among DEVELOPER-AUTHORED methods. Not discovery or learned algorithms."""
+    training = _binary_cases(training)
+    choices = tuple(choices)
     if not training: raise ValueError('training cases required')
+    if not choices or any(name not in METHODS for name in choices):
+        raise ValueError('known method choices required')
     if len({x for x, _ in training}) != len(training):
         raise ValueError('duplicate training cases')
     return freeze(min(choices, key=lambda name: (
@@ -46,13 +61,14 @@ def choose(training, choices=tuple(METHODS)):
 
 
 def evaluate(frozen, cases):
+    cases = _binary_cases(cases)
     if not cases: raise ValueError('evaluation cases required')
     return sum(execute(frozen, x) == y for x, y in cases) / len(cases)
 
 
 def toy_arms(training, heldout, *, seed=7):
     """Informative comparison only; caller-supplied labels are NOT hidden/custodial."""
-    training, heldout = tuple(training), tuple(heldout)
+    training, heldout = _binary_cases(training), _binary_cases(heldout)
     if {x for x, _ in training} & {x for x, _ in heldout}:
         raise ValueError("held-out inputs overlap training inputs")
     selected = choose(training)
@@ -74,12 +90,15 @@ def domain_shift_probe(training, near_cases, shifted_cases, *, seed=7):
     This is a same-process synthetic toy. It does not attest independent
     labels, future behavior, or self-generated cognitive strategies.
     """
-    training, near_cases, shifted_cases = tuple(training), tuple(near_cases), tuple(shifted_cases)
+    training, near_cases, shifted_cases = (
+        _binary_cases(training), _binary_cases(near_cases), _binary_cases(shifted_cases))
     if not near_cases or not shifted_cases:
         raise ValueError("both held-out domains required")
     trained_inputs = {x for x, _ in training}
     if trained_inputs & {x for x, _ in near_cases + shifted_cases}:
         raise ValueError("shift probe inputs overlap training inputs")
+    if {x for x, _ in near_cases} & {x for x, _ in shifted_cases}:
+        raise ValueError("near and shifted held-out inputs overlap")
     chosen = choose(training)
     frozen_baseline = freeze('zero')
     near_chosen = evaluate(chosen, near_cases)
