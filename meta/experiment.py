@@ -32,6 +32,11 @@ def _cases(rows):
     ids = [r['case_id'] for r in converted]
     if len(ids) != len(set(ids)):
         raise ValueError('duplicate case identity')
+    # This toy has deterministic methods: repeating an input under a new ID
+    # must not inflate the number of independent committed challenge cases.
+    inputs = [r['input'] for r in converted]
+    if len(inputs) != len(set(inputs)):
+        raise ValueError('duplicate committed inputs')
     return sorted(converted, key=lambda r: r['case_id'])
 
 
