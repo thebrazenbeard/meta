@@ -51,6 +51,13 @@ class MethodProtocolTests(unittest.TestCase):
             adjudicate(self.commit, self.cases, run_committed(self.commit, self.cases),
                        self.labels | {'b': True})
 
+    def test_distinct_case_ids_cannot_reuse_deterministic_input(self):
+        # Different identifiers do not turn one deterministic input into
+        # independent evidence, even if every expected label is correct.
+        duplicate_inputs = [('a', 2), ('b', 2), ('c', 3)]
+        with self.assertRaisesRegex(ValueError, 'duplicate committed inputs'):
+            commit_method('repeated-input', self.method, duplicate_inputs)
+
     def test_shift_is_recorded_without_self_recovery(self):
         reverse_labels = {k: 1 - v for k, v in self.labels.items()}
         report = adjudicate(self.commit, self.cases, run_committed(self.commit, self.cases), reverse_labels)
