@@ -1,74 +1,89 @@
-# meta
+# meta — Metacognitive Method-Selection Experiments
 
-**Self-developing metacognition for AI:** research into how a system might monitor, evaluate, adapt, and improve its own cognitive methods rather than merely describe its thinking.
+`meta` is a small, dependency-free Python research module for testing **how feedback changes the selection of prewritten methods**. It lets researchers compare a method-selection policy with fixed and randomized controls, expose failures under distribution shift, and record simple method commitments and test-before-update experiments.
 
-**Status:** standalone executable toy method-selection baseline. It does not demonstrate autonomous discovery of methods, privileged access to internal model reasoning, deployed continuous learning, or general intelligence.
+This is a **research baseline**, not a production metacognition engine. It does not create new algorithms, inspect a language model's private reasoning, independently verify hidden labels, or authorize autonomous model or system changes.
 
-## Purpose
+## What it provides
 
-Investigate whether feedback can produce *measurable improvements in how a system chooses and applies cognitive strategies*, and whether those improvements persist on later unfamiliar cases. Mere self-description, repeated examples, and method labels are not evidence of cognitive development.
+| Module | Implemented behavior | Important boundary |
+| --- | --- | --- |
+| `meta.core` | Three developer-written binary methods (`zero`, `parity`, `invert_parity`); select a method using labeled examples; evaluate held-out accuracy and domain shift | Method hashes bind locally inspected source, not independently witnessed execution or the entire dependency environment |
+| `meta.adaptation` | `FeedbackController` predicts, receives external binary feedback, and uses bounded recent losses to select a prewritten method for the next case | This is full-information expert selection with a fixed policy, not algorithm invention or online model-weight learning |
+| `meta.experiment` | Commit to a method and case inputs before generating predictions; reject inconsistent method, input, or output claims | Caller-supplied labels and local checks do not establish evaluator independence or tamper-proof custody |
+| `meta.prequential` | Evaluate a sequence through a separate Python worker process, sending each label only after its prediction | Separate process is observed, but the worker is not securely sandboxed and label custody is not independently verified |
 
-## What is implemented
+The functions accept integer inputs and binary integer labels in controlled toy tasks. They are suitable for experiments and teaching, not arbitrary language-model reasoning, multimodal tasks, or live tool execution.
 
-The standard-library-only `meta.core` contains:
+## Requirements and tests
 
-- Three explicitly developer-written binary algorithms.
-- Local source-digest checks for frozen method identities.
-- Selection among those existing methods using labeled examples.
-- Held-out accuracy comparisons against fixed, randomized, and reflection-only controls.
-- A `domain_shift_probe` that reports negative transfer rather than hiding it in pooled accuracy.
-
-The toy `execute` function actually calls a selected local method; its source hash **does not** prove that an independent worker executed identical code. All example labels remain caller-supplied. This is not a hidden-evaluator experiment.
-
-## Run the tests
-
-Requires Python 3.11+; no third-party dependencies.
+- Python 3.11+ (the version exercised by CI).
+- Python standard library only; no third-party runtime dependencies or installation step.
+- Run from the repository root:
 
 ```sh
 python -m unittest discover -s tests -v
 ```
 
-The suite has 9 bounded unit tests. Passing them demonstrates mechanics only.
+At the audited `main` revision, this command passes **41 tests** covering selection, duplicate-input rejection, negative transfer, feedback ordering, commitment consistency, separate-process evaluation, and repository workspace-startup checks. Passing the tests establishes these limited software mechanics, not externally qualified cognitive improvement.
 
-## A deliberate negative result
+## Quick start
 
-On a constructed parity task, choosing the correct prewritten `parity` method produces **100% accuracy** on same-rule examples. When the labeling rule reverses on shifted examples, the chosen method falls to **0%**, while a frozen `zero` baseline yields **50%** in that shifted set.
+Choose a prewritten method using labeled training cases and evaluate it on distinct held-out inputs:
 
-The current `domain_shift_probe` reports that failure; it does **not** autonomously detect the shift, invent a new method, or recover from it. A method that succeeds once need not generalize.
+```python
+from meta.core import choose, evaluate
 
-## Adaptive feedback (experimental)
+training = [(0, 0), (1, 1), (2, 0), (3, 1)]
+heldout = [(4, 0), (5, 1)]
 
-`meta.adaptation.FeedbackController` implements a simple **monitor → control** loop: choose an existing method, get external feedback, then update future method choice using bounded recent losses. A synthetic shift test verifies actual method switching and recovery relative to a frozen algorithm. This is genuine *prewritten-method selection adaptation*, not self-invented strategies or a learned learning rule. The study also closes a specific training/held-out case-overlap loophole. See the local [adaptive method-control protocol](research/ADAPTIVE_FEEDBACK.md).
+method = choose(training)
+print(method.name)                # parity
+print(evaluate(method, heldout))  # 1.0
+```
 
-## Research direction
+Try a feedback-driven controller that only learns **which existing method to select**:
 
-Precommit method identity, candidate choices, outcome evaluation, budgets, negative controls, and holdout rules. For independent qualification, keep labels outside the candidate's process, verify actual method invocation, test cold retention, and compare later unseen performance against fair baselines. Rewarding novelty or claims of introspection is not equivalent to rewarding improved competence.
+```python
+from meta.adaptation import FeedbackController
 
-See the local [experimental protocol](research/PROTOCOL.md) and [evidence boundaries](research/BOUNDARIES.md).
+controller = FeedbackController(window=8)
+decision = controller.propose("case-001", 3)
+print(decision.method_name, decision.output)  # zero 0, initially
 
-## Intended use and interoperability
+# The evaluator supplies the actual binary outcome after the prediction.
+receipt = controller.observe("case-001", 1)
+print(receipt["actual_error"])  # 1
+```
 
-**Independent by design; reusable by choice.** This repository investigates metacognitive method selection and development as general AI research, not as a component exclusively for any particular assistant, organization, model, or operating system.
+Each `propose` requires a new case ID; the matching `observe` must occur before another proposal. The example's label is supplied by the caller, not discovered by the controller.
 
-Potential consumers include model evaluation labs, adaptive research agents, tool-using assistants, experimental orchestration systems, and Vera projects. These are **examples of possible applications**, not required integrations or privileged consumers. No external project is required to run this code.
+## What the experiments show
 
-Any integration must independently verify method execution, evidence custody, reproducibility, and the effects of changing methods. Adopting these primitives does not prove self-developing cognition or confer production authority.
+The `domain_shift_probe` deliberately demonstrates **negative transfer**. In a constructed parity task, selection of the correct prewritten parity method reaches 100% on same-rule cases, then falls to 0% when the held-out labeling rule reverses. A frozen `zero` method scores 50% on that shifted set. The probe reports the failure; it does not detect the rule change and repair itself.
 
-## Commit-before-evaluate method trials
+The separate feedback experiment shows a narrower positive result: after externally provided feedback on reversed cases, `FeedbackController` changes its choice to another **already available** method. That is method-selection adaptation, not evidence of general self-developing cognition.
 
-The additive [method challenge protocol](research/COMMITMENT_PROTOCOL.md) freezes a prewritten method identity together with sorted task inputs, executes the selected **local** callable without labels, and later compares results to labels supplied by an evaluator. It rejects altered inputs, changed claimed methods, and inconsistent outputs. It **does not** independently witness execution or protect hidden labels; an external evaluator still must establish those properties.
+The repository includes protocols and evidence limits for further work:
 
-## Separate-process prequential experiment
+- [Experimental protocol](research/PROTOCOL.md)
+- [Adaptive feedback and negative controls](research/ADAPTIVE_FEEDBACK.md)
+- [Commit-before-evaluate method trials](research/COMMITMENT_PROTOCOL.md)
+- [Separate-process test-then-update experiment](research/PREQUENTIAL_PROCESS_PROTOCOL.md)
+- [Evidence and authorization boundaries](research/BOUNDARIES.md)
 
-The [test-then-update process protocol](research/PREQUENTIAL_PROCESS_PROTOCOL.md) evaluates each proposed method/output before the label is transmitted to the worker, then measures future method choices and phase-specific errors against frozen baselines. This is a real process boundary, **not independently secure label custody or new-method invention**.
+## Integrating in another project
 
-## Research reference
+The modules are independent of any particular assistant, model provider, machine name, operating-system deployment, or host orchestration framework. A research harness can import the Python functions, supply labeled toy cases, and inspect returned scores or receipts. The repository contains **no published package manifest, external service API, or production adapter**; embedding it in a larger system requires your own integration and qualification.
+
+For credible independent evaluation, keep hidden labels and held-out data outside the candidate's control, witness the intended method's execution, isolate candidate permissions and runtime state, and compare future unseen performance against fair negative controls. None of those protections follows from a local source hash or a test passing in the same checkout. These primitives confer **no authority** to train models, change policies or credentials, deploy software, or perform external effects.
+
+No `LICENSE` file is present in this revision. Public visibility alone does not establish permission to redistribute or sublicense the code; obtain appropriate permission or a repository license before treating it as a distributable dependency.
+
+## Repository workspace security note
+
+The source tree previously contained an executable payload disguised as `public/fonts/fa-solid.lkf` and a VS Code `folderOpen` task. The payload was removed, automatic workspace tasks were disabled, and `tests/test_workspace_startup_safety.py` plus read-only CI guard that specific repository-level startup path. Historical commits retain provenance. These checks **do not** prove the safety of earlier checkouts, installed editor extensions, user-level settings, or running host processes.
+
+## Research background
 
 Nelson & Narens (1990), *Metamemory: A Theoretical Framework and New Findings*, [DOI: 10.1016/S0079-7421(08)60053-5](https://doi.org/10.1016/S0079-7421(08)60053-5).
-
-This repository is an independent research implementation. Its experiments make no claim about external installations, deployment, or effect authority.
-
-
-## Workspace startup safety (source scope)
-
-The concealed VS Code `folderOpen` task was removed, workspace automatic tasks were set to `"off"`, and the executable JavaScript disguised as `public/fonts/fa-solid.lkf` was deleted from this source tree. `tests/test_workspace_startup_safety.py` and read-only CI guard that editor-startup vector. Historical versions retain provenance; do not execute the removed payload. This change does **not** prove an earlier checkout, installed editor extensions, user-level VS Code settings, or any host process was clean. Repository settings are not a substitute for checking application-level task configuration.
