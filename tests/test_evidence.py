@@ -64,5 +64,26 @@ class EvidenceSelectionTests(unittest.TestCase):
             select_with_evidence(cases, alpha=1.0)
 
 
+    def test_mutable_rows_cannot_relabel_paired_trials_between_metrics(self):
+        # A caller may supply a list subclass whose iterator changes the label.
+        # Every comparison must use one validated, immutable row snapshot.
+        class ChameleonRow(list):
+            def __init__(self, x, y):
+                super().__init__((x, y))
+                self.iterations = 0
+
+            def __iter__(self):
+                self.iterations += 1
+                x, y = self[0], self[1]
+                return iter((x, y if self.iterations % 2 else 1 - y))
+
+        expected = select_with_evidence([(i, i % 2) for i in range(48)])
+        rows = [ChameleonRow(i, i % 2) for i in range(48)]
+        observed = select_with_evidence(rows)
+        self.assertEqual(observed["chosen_method"], expected["chosen_method"])
+        self.assertEqual(observed["comparisons"], expected["comparisons"])
+        self.assertTrue(all(row.iterations <= 1 for row in rows))
+
+
 if __name__ == "__main__":
     unittest.main()
