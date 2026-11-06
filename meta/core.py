@@ -15,14 +15,21 @@ METHODS = {'zero': zero, 'parity': parity, 'invert_parity': invert_parity}
 
 
 def _binary_cases(cases):
-    """Validate the toy task's integer inputs and binary evaluator labels."""
-    rows = tuple(cases)
-    for row in rows:
-        if (not isinstance(row, (tuple, list)) or len(row) != 2
-                or type(row[0]) is not int
-                or type(row[1]) is not int or row[1] not in (0, 1)):
+    """Validate and snapshot the toy inputs/labels once for every metric.
+
+    An outer tuple alone retains untrusted mutable row objects. A stateful row
+    iterator could otherwise change its label between paired comparisons.
+    This is internal consistency, NOT independently authenticated labels.
+    """
+    frozen = []
+    for row in tuple(cases):
+        if not isinstance(row, (tuple, list)) or len(row) != 2:
             raise ValueError('cases require integer inputs and binary integer labels')
-    return rows
+        x, y = row[0], row[1]
+        if type(x) is not int or type(y) is not int or y not in (0, 1):
+            raise ValueError('cases require integer inputs and binary integer labels')
+        frozen.append((x, y))
+    return tuple(frozen)
 
 
 def _unique_inputs(cases, partition):
