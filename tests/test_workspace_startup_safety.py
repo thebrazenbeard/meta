@@ -5,9 +5,10 @@ No VS Code task, Node payload, or font-like executable is ever launched.
 
 import unittest
 from pathlib import Path
+from shutil import copyfile
 from tempfile import TemporaryDirectory
 
-from scripts.check_editor_source_safety import check_source
+from scripts.check_editor_source_safety import TRUSTED_FONTS, check_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,6 +87,20 @@ class WorkspaceStartupSafetyTests(unittest.TestCase):
         (fonts / "fa-solid-900.ttf").write_bytes(
             b"\x00\x01\x00\x00" + b"var payload = require('child_process')" * 4
         )
+        self.assertIn("font digest differs from clean parent", self.findings())
+
+    def test_windows_svg_line_endings_are_safe_but_appended_payload_is_not(self):
+        fonts = self.root / "public" / "fonts"
+        fonts.mkdir(parents=True)
+        for name in TRUSTED_FONTS:
+            copyfile(ROOT / "public" / "fonts" / name, fonts / name)
+        svg = fonts / "fa-brands-400.svg"
+        canonical = svg.read_bytes().replace(b"\r\n", b"\n")
+        self.assertIn(b"\n", canonical)
+        crlf = canonical.replace(b"\n", b"\r\n")
+        svg.write_bytes(crlf)
+        self.assertEqual(check_source(self.root), ())
+        svg.write_bytes(crlf + b"\r\n<script>untrusted</script>\r\n")
         self.assertIn("font digest differs from clean parent", self.findings())
 
     def test_new_disguised_font_is_rejected_even_with_header(self):

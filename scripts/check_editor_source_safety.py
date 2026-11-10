@@ -182,7 +182,12 @@ def check_source(root: Path) -> tuple[str, ...]:
                 violations.append(f"{relative}: unreviewed font asset")
                 continue
             seen.add(file.name)
-            digest = hashlib.sha256(file.read_bytes()).hexdigest()
+            data = file.read_bytes()
+            if file.suffix.casefold() == ".svg":
+                # Git's Windows checkout may turn LF into CRLF for text SVGs.
+                # Normalize ONLY line endings, then hash the full asset.
+                data = data.replace(b"\r\n", b"\n")
+            digest = hashlib.sha256(data).hexdigest()
             if digest != TRUSTED_FONTS[file.name]:
                 violations.append(f"{relative}: font digest differs from clean parent")
         for name in TRUSTED_FONTS.keys() - seen:
