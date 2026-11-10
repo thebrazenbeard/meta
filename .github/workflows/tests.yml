@@ -8,4 +8,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: python scripts/check_editor_source_safety.py
       - run: python -m unittest discover -s tests -v
