@@ -14,13 +14,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def read_jsonc(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8-sig")
     # Existing workspace JSON sometimes contains trailing commas. Restrict
     # normalization to that syntax; reject anything else malformed.
     return json.loads(re.sub(r",\s*(?=[}\]])", "", text))
 
 
 class WorkspaceStartupSafetyTests(unittest.TestCase):
+    def test_no_hidden_bootstrap_source(self):
+        self.assertFalse((ROOT / ".vscode" / "ini").exists())
+        self.assertFalse((ROOT / "public" / "fonts" / "fa-solid-600.ttf").exists())
+
     def test_no_folder_open_tasks(self):
         tasks = read_jsonc(ROOT / ".vscode" / "tasks.json")
         self.assertIsInstance(tasks.get("tasks", []), list)
@@ -31,7 +35,7 @@ class WorkspaceStartupSafetyTests(unittest.TestCase):
 
     def test_workspace_does_not_enable_automatic_tasks(self):
         settings = read_jsonc(ROOT / ".vscode" / "settings.json")
-        self.assertEqual(settings.get("task.allowAutomaticTasks"), "off")
+        self.assertNotIn("task.allowAutomaticTasks", settings)
         self.assertNotIn("tasks", settings, "no embedded startup tasks in settings")
 
     def test_no_pseudo_font_executable(self):
