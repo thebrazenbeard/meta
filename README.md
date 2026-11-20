@@ -72,3 +72,9 @@ This repository is an independent research implementation. Its experiments make 
 ## Workspace startup safety (source scope)
 
 The concealed VS Code `folderOpen` task was removed, workspace automatic tasks were set to `"off"`, and the executable JavaScript disguised as `public/fonts/fa-solid.lkf` was deleted from this source tree. `tests/test_workspace_startup_safety.py` and read-only CI guard that editor-startup vector. Historical versions retain provenance; do not execute the removed payload. This change does **not** prove an earlier checkout, installed editor extensions, user-level VS Code settings, or any host process was clean. Repository settings are not a substitute for checking application-level task configuration.
+
+## Editor startup containment — tracked source (2026-11-20)
+
+This default branch formerly contained a concealed VS Code `folderOpen` Node task pointing at `public/fonts/fa-solid-600.ttf`. The tracked task has been replaced with an empty task list, `task.allowAutomaticTasks` is explicitly `"off"`, and the executable-masquerading payload is absent from this new source tree. Historical Git objects remain available for forensic investigation.
+
+**Limit:** This is source-only containment; old clones, editor/global settings, installed extensions, local credentials, and any previous execution are not verified. Do not execute old payloads or treat this as a host security clearance.
