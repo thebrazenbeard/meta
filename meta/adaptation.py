@@ -4,7 +4,7 @@ One-case-at-a-time synthetic full-information protocol, not independent
 evaluation or generation of new methods. Feedback labels are caller supplied.
 """
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .core import METHODS, execute, freeze
 
@@ -35,7 +35,7 @@ class FeedbackController:
 
     def _loss(self, method_name):
         if not self._feedback: return 0.0
-        return sum(item["loss"][method_name] for item in self._feedback) / len(self._feedback)
+        return sum(item[method_name] for item in self._feedback) / len(self._feedback)
 
     def propose(self, case_id, x):
         if self._pending is not None: raise ValueError("feedback required before another proposal")
@@ -46,7 +46,7 @@ class FeedbackController:
         decision = MethodDecision(case_id, x, selected, execute(freeze(selected), x), self.count)
         self._pending = decision
         self._seen.add(case_id)
-        return decision
+        return replace(decision)
 
     def observe(self, case_id, outcome):
         if self._pending is None or case_id != self._pending.case_id:
@@ -59,8 +59,8 @@ class FeedbackController:
         receipt = {"case_id": case_id, "method": decision.method_name,
                    "actual_error": losses[decision.method_name],
                    "loss": losses, "feedback_count_before": decision.prior_feedback_count}
-        self._feedback.append(receipt)
-        self.receipts.append(receipt)
+        self._feedback.append(dict(losses))
+        self.receipts.append({**receipt, "loss": dict(losses)})
         self._pending = None
         self.count += 1
         return receipt
