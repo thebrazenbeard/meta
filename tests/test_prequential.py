@@ -45,6 +45,22 @@ class SeparatedSelectionTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "feedback count"):
                         evaluate_stream([("x", 3, 1, "trial")])
 
+    def test_mutable_row_is_snapshotted_before_validation_and_feedback(self):
+        class ChangingRow(list):
+            reads = 0
+            def __iter__(self):
+                self.reads += 1
+                if self.reads == 1:
+                    return iter(("x", 3, 1, "initial"))
+                return iter(("x", 3, 0, ""))
+
+        row = ChangingRow(["x", 3, 1, "initial"])
+        actual = evaluate_stream([row])
+        control = evaluate_stream([("x", 3, 1, "initial")])
+        self.assertEqual(actual["phases"], control["phases"])
+        self.assertEqual(row.reads, 1)
+        self.assertTrue(actual["prediction_before_label_protocol"])
+
     def test_evaluator_has_no_qualification(self):
         result = evaluate_stream([("x", 3, 1, "trial")])
         self.assertFalse(result["sandbox_isolation_verified"])

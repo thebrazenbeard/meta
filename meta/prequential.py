@@ -50,7 +50,7 @@ def _send(proc, request):
 
 def evaluate_stream(cases):
     """Evaluator keeps (id, input, label, phase) outside worker stdin until feedback."""
-    rows = tuple(cases)
+    rows = tuple(tuple(row) for row in cases)
     if not rows:
         raise ValueError("nonempty cases required")
     if any(len(r) != 4 for r in rows):
