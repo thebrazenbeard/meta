@@ -50,7 +50,7 @@ def _send(proc, request):
 
 def evaluate_stream(cases):
     """Evaluator keeps (id, input, label, phase) outside worker stdin until feedback."""
-    rows = tuple(cases)
+    rows = tuple(tuple(row) for row in cases)
     if not rows:
         raise ValueError("nonempty cases required")
     if any(len(r) != 4 for r in rows):
@@ -73,11 +73,14 @@ def evaluate_stream(cases):
                             stderr=subprocess.PIPE, text=True, bufsize=1)
     by_phase = {}
     try:
-        for case_id, x, label, phase in rows:
+        for expected_feedback_count, (case_id, x, label, phase) in enumerate(rows):
             prediction = _send(proc, {"op": "predict", "case_id": case_id, "input": x})
             if (prediction.get("case_id") != case_id or prediction.get("worker_pid") != proc.pid
                     or prediction.get("input") != x):
                 raise ValueError("worker prediction identity mismatch")
+            if (type(prediction.get("feedback_count_before")) is not int
+                    or prediction["feedback_count_before"] != expected_feedback_count):
+                raise ValueError("worker feedback count violates predict-before-feedback order")
             method = prediction.get("method")
             if method not in METHODS or prediction.get("output") != METHODS[method](x):
                 raise ValueError("submitted output does not match known local method")

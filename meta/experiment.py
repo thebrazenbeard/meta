@@ -68,9 +68,11 @@ def _check(commitment, cases):
     if not isinstance(commitment, MethodCommitment) or commitment.schema != SCHEMA:
         raise ValueError('invalid method commitment')
     frozen = FrozenMethod(commitment.method_name, commitment.source_sha256)
-    if commitment != commit_method(commitment.challenge_id, frozen, cases):
+    rows = _cases(cases)
+    snapshot = tuple((r['case_id'], r['input']) for r in rows)
+    if commitment != commit_method(commitment.challenge_id, frozen, snapshot):
         raise ValueError('method or case commitment mismatch')
-    return frozen, _cases(cases)
+    return frozen, rows
 
 
 def run_committed(commitment, cases):
@@ -86,8 +88,11 @@ def adjudicate(commitment, cases, submitted_predictions, evaluator_labels):
     """
     frozen, rows = _check(commitment, cases)
     expected_ids = {r['case_id'] for r in rows}
+    if not isinstance(submitted_predictions, dict) or not isinstance(evaluator_labels, dict):
+        raise ValueError('submitted outcomes must match committed case IDs')
+    submitted_predictions, evaluator_labels = dict(submitted_predictions), dict(evaluator_labels)
     for mapping in (submitted_predictions, evaluator_labels):
-        if not isinstance(mapping, dict) or set(mapping) != expected_ids:
+        if set(mapping) != expected_ids:
             raise ValueError('submitted outcomes must match committed case IDs')
         if any(type(v) is not int or v not in (0, 1) for v in mapping.values()):
             raise ValueError('binary integer outputs required')
